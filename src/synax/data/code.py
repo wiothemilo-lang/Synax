@@ -116,6 +116,8 @@ def prepare_python_corpus(
     allow = licenses or set(PERMISSIVE_LICENSES)
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = output_path.with_name(output_path.name + ".tmp")
+    tmp_path.unlink(missing_ok=True)
 
     seen_hashes: set[str] = set()
     minhash = MinHashDeduper(threshold=0.9) if dedupe == "minhash" else None
@@ -129,7 +131,7 @@ def prepare_python_corpus(
         "bytes": 0,
     }
 
-    with output_path.open("w", encoding="utf-8") as handle:
+    with tmp_path.open("w", encoding="utf-8") as handle:
         for record in records:
             stats["seen"] += 1
             if max_seen is not None and stats["seen"] > max_seen:
@@ -183,6 +185,7 @@ def prepare_python_corpus(
             if max_bytes is not None and stats["bytes"] >= max_bytes:
                 break
 
+    tmp_path.replace(output_path)
     return stats
 
 

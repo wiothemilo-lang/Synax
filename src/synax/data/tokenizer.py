@@ -32,6 +32,11 @@ def train_tokenizer(
 
     output_prefix = Path(output_prefix)
     output_prefix.parent.mkdir(parents=True, exist_ok=True)
+    tmp_prefix = output_prefix.with_name(output_prefix.name + ".tmp")
+    tmp_model = Path(str(tmp_prefix) + ".model")
+    tmp_vocab = Path(str(tmp_prefix) + ".vocab")
+    tmp_model.unlink(missing_ok=True)
+    tmp_vocab.unlink(missing_ok=True)
 
     with tempfile.NamedTemporaryFile(
         "w",
@@ -69,7 +74,7 @@ def train_tokenizer(
     try:
         trainer_kwargs: dict[str, object] = {
             "input": str(corpus_path),
-            "model_prefix": str(output_prefix),
+            "model_prefix": str(tmp_prefix),
             "vocab_size": vocab_size,
             "model_type": model_type,
             "character_coverage": character_coverage,
@@ -97,6 +102,8 @@ def train_tokenizer(
     finally:
         corpus_path.unlink(missing_ok=True)
 
+    tmp_model.replace(Path(str(output_prefix) + ".model"))
+    tmp_vocab.replace(Path(str(output_prefix) + ".vocab"))
     return output_prefix.with_suffix(".model")
 
 
@@ -134,11 +141,17 @@ def encode_corpus(
     if val_path is not None:
         val_path.parent.mkdir(parents=True, exist_ok=True)
 
+    output_tmp = output_path.with_name(output_path.name + ".tmp")
+    output_tmp.unlink(missing_ok=True)
+    val_tmp = val_path.with_name(val_path.name + ".tmp") if val_path is not None else None
+    if val_tmp is not None:
+        val_tmp.unlink(missing_ok=True)
+
     train_tokens = 0
     val_tokens = 0
-    val_context = val_path.open("wb") if val_path is not None else nullcontext()
+    val_context = val_tmp.open("wb") if val_tmp is not None else nullcontext()
 
-    with output_path.open("wb") as train_handle, val_context as val_handle:
+    with output_tmp.open("wb") as train_handle, val_context as val_handle:
         for raw_text in iter_documents(inputs):
             text = normalize_code(raw_text) if code_mode else normalize_text(
                 raw_text, strip_html=strip_html
@@ -158,6 +171,9 @@ def encode_corpus(
                 train_handle.write(chunk.tobytes())
                 train_tokens += len(ids)
 
+    output_tmp.replace(output_path)
+    if val_tmp is not None and val_path is not None:
+        val_tmp.replace(val_path)
     return train_tokens, val_tokens
 
 
