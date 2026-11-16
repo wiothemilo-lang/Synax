@@ -73,3 +73,55 @@ def test_encode_corpus_creates_shards(tmp_path) -> None:
 
     data = np.memmap(train_bin, dtype=np.uint16, mode="r")
     assert len(data) == train_tokens
+
+
+CODE_SAMPLE = """\
+def add(a, b):
+    if a > b:
+        return a + b
+    return b - a
+
+
+class Counter:
+    def __init__(self):
+        self.value = 0
+
+    def increment(self):
+        self.value += 1
+        return self.value
+"""
+
+
+def make_code_corpus(path) -> None:
+    blocks = []
+    for i in range(40):
+        blocks.append(
+            f"def function_{i}(x, y):\n"
+            f"    if x > y:\n"
+            f"        return x - y + {i}\n"
+            f"    return y - x\n"
+            f"\n"
+            f"class Class{i}:\n"
+            f"    def method(self):\n"
+            f"        return {i}\n"
+        )
+    path.write_text("\n".join(blocks), encoding="utf-8")
+
+
+def test_code_tokenizer_roundtrip(tmp_path) -> None:
+    corpus = tmp_path / "code.txt"
+    make_code_corpus(corpus)
+
+    model_path = train_tokenizer(
+        [corpus],
+        tmp_path / "sp-code",
+        vocab_size=512,
+        character_coverage=1.0,
+        code_mode=True,
+    )
+    sp = load_tokenizer(model_path)
+
+    ids = sp.encode(CODE_SAMPLE, out_type=int)
+    assert ids
+    assert sp.decode(ids) == CODE_SAMPLE
+

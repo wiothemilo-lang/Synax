@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
+from synax.data.code import normalize_code
 from synax.data.pipeline import iter_documents, normalize_text
 
 
@@ -23,6 +24,7 @@ def train_tokenizer(
     character_coverage: float = 0.9995,
     strip_html: bool = False,
     tmp_dir: str | Path | None = None,
+    code_mode: bool = False,
 ) -> Path:
     """Train a SentencePiece model on .txt/.md/.jsonl inputs and return the .model path."""
 
@@ -39,8 +41,19 @@ def train_tokenizer(
         dir=str(tmp_dir) if tmp_dir else None,
     ) as handle:
         corpus_path = Path(handle.name)
-        for text in iter_documents(inputs):
-            text = normalize_text(text, strip_html=strip_html)
+        for raw_text in iter_documents(inputs):
+            if code_mode:
+                text = normalize_code(raw_text)
+                for line in text.splitlines():
+                    if not line.strip():
+                        continue
+                    while len(line) > 4000:
+                        handle.write(line[:4000] + "\n")
+                        line = line[4000:]
+                    handle.write(line + "\n")
+                continue
+
+            text = normalize_text(raw_text, strip_html=strip_html)
             for line in text.splitlines():
                 line = line.strip()
                 if not line:
@@ -54,26 +67,33 @@ def train_tokenizer(
                 handle.write(line + "\n")
 
     try:
-        spm.SentencePieceTrainer.train(
-            input=str(corpus_path),
-            model_prefix=str(output_prefix),
-            vocab_size=vocab_size,
-            model_type=model_type,
-            character_coverage=character_coverage,
-            normalization_rule_name="identity",
-            byte_fallback=True,
-            split_by_unicode_script=True,
-            split_digits=True,
-            pad_id=0,
-            unk_id=1,
-            bos_id=2,
-            eos_id=3,
-            input_sentence_size=5_000_000,
-            shuffle_input_sentence=True,
-            max_sentence_length=16384,
-            num_threads=max(1, (os.cpu_count() or 4) - 1),
-            hard_vocab_limit=False,
-        )
+        trainer_kwargs: dict[str, object] = {
+            "input": str(corpus_path),
+            "model_prefix": str(output_prefix),
+            "vocab_size": vocab_size,
+            "model_type": model_type,
+            "character_coverage": character_coverage,
+            "normalization_rule_name": "identity",
+            "byte_fallback": True,
+            "split_by_unicode_script": True,
+            "split_digits": True,
+            "pad_id": 0,
+            "unk_id": 1,
+            "bos_id": 2,
+            "eos_id": 3,
+            "input_sentence_size": 5_000_000,
+            "shuffle_input_sentence": True,
+            "max_sentence_length": 16384,
+            "num_threads": max(1, (os.cpu_count() or 4) - 1),
+            "hard_vocab_limit": False,
+        }
+        if code_mode:
+            trainer_kwargs.update(
+                remove_extra_whitespaces=False,
+                allow_whitespace_only_pieces=True,
+                add_dummy_prefix=False,
+            )
+        spm.SentencePieceTrainer.train(**trainer_kwargs)
     finally:
         corpus_path.unlink(missing_ok=True)
 
@@ -103,6 +123,7 @@ def encode_corpus(
     val_ratio: float = 0.0,
     add_eos: bool = True,
     strip_html: bool = False,
+    code_mode: bool = False,
 ) -> tuple[int, int]:
     """Encode documents into flat uint16 shards. Returns (train_tokens, val_tokens)."""
 
@@ -119,7 +140,9 @@ def encode_corpus(
 
     with output_path.open("wb") as train_handle, val_context as val_handle:
         for raw_text in iter_documents(inputs):
-            text = normalize_text(raw_text, strip_html=strip_html)
+            text = normalize_code(raw_text) if code_mode else normalize_text(
+                raw_text, strip_html=strip_html
+            )
             if not text:
                 continue
 
@@ -150,6 +173,7 @@ def main(argv: list[str] | None = None) -> None:
     train_parser.add_argument("--character-coverage", type=float, default=0.9995)
     train_parser.add_argument("--strip-html", action="store_true")
     train_parser.add_argument("--tmp-dir", default=None)
+    train_parser.add_argument("--code", action="store_true", help="preserve code whitespace")
 
     encode_parser = subparsers.add_parser("encode", help="encode corpus to uint16")
     encode_parser.add_argument("--input", nargs="+", required=True)
@@ -159,6 +183,7 @@ def main(argv: list[str] | None = None) -> None:
     encode_parser.add_argument("--val-ratio", type=float, default=0.0)
     encode_parser.add_argument("--no-eos", action="store_true")
     encode_parser.add_argument("--strip-html", action="store_true")
+    encode_parser.add_argument("--code", action="store_true", help="preserve code whitespace")
 
     args = parser.parse_args(argv)
 
@@ -171,6 +196,7 @@ def main(argv: list[str] | None = None) -> None:
             character_coverage=args.character_coverage,
             strip_html=args.strip_html,
             tmp_dir=args.tmp_dir,
+            code_mode=args.code,
         )
         print(f"tokenizer: {model_path}")
     else:
@@ -182,6 +208,7 @@ def main(argv: list[str] | None = None) -> None:
             val_ratio=args.val_ratio,
             add_eos=not args.no_eos,
             strip_html=args.strip_html,
+            code_mode=args.code,
         )
         print(f"train_tokens: {train_tokens:,}")
         if args.val_output:
