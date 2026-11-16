@@ -1,0 +1,44 @@
+out_dir: checkpoints/60m
+
+model:
+  vocab_size: 32000
+  d_model: 640
+  n_layers: 8
+  n_heads: 8
+  n_kv_heads: 8
+  ffn_hidden: 1760
+  max_seq_len: 1024
+  dropout: 0.0
+  tie_embeddings: true
+  rope_theta: 10000.0
+  norm_eps: 1.0e-5
+  init_std: 0.02
+
+train:
+  batch_size: 8
+  grad_accum: 4
+  lr: 0.0003
+  min_lr_ratio: 0.1
+  warmup_steps: 600
+  max_steps: 31000
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  log_every: 10
+  eval_every: 500
+  save_every: 500
+  sample_every: 1000
+  max_val_batches: 20
+  keep_last: 2
+  seed: 1337
+  dtype: auto
+  compile: false
+  tokenizer_path: tokenizer/sp32.model
+  sample_prompt: "Việt Nam là"
+
+data:
+  train_bin: data/tokenized/train.bin
+  val_bin: data/tokenized/val.bin
+  seq_len: 1024
+  synthetic: false

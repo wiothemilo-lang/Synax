@@ -1,0 +1,44 @@
+out_dir: checkpoints/tiny
+
+model:
+  vocab_size: 512
+  d_model: 128
+  n_layers: 2
+  n_heads: 4
+  n_kv_heads: 2
+  ffn_hidden: 352
+  max_seq_len: 128
+  dropout: 0.0
+  tie_embeddings: true
+  rope_theta: 10000.0
+  norm_eps: 1.0e-5
+  init_std: 0.02
+
+train:
+  batch_size: 8
+  grad_accum: 1
+  lr: 0.001
+  min_lr_ratio: 0.1
+  warmup_steps: 10
+  max_steps: 50
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  log_every: 5
+  eval_every: 25
+  save_every: 25
+  sample_every: 25
+  max_val_batches: 2
+  keep_last: 2
+  seed: 1337
+  dtype: auto
+  compile: false
+  tokenizer_path: ""
+  sample_prompt: "Việt Nam là"
+
+data:
+  train_bin: ""
+  val_bin: ""
+  seq_len: 128
+  synthetic: true

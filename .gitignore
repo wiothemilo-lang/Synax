@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Data and model artifacts: never commit these
+/data/
+/datasets/
+/tokenizer/*.model
+/tokenizer/*.vocab
+/checkpoints/
+/runs/
+*.bin
+*.gguf
+*.pt
+*.pth
+*.safetensors
+*.npy
+*.npz
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Secrets
+.env
+.env.*
+
+# OS
+.DS_Store
