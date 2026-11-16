@@ -38,6 +38,9 @@ python3 -m venv .venv
 Lệnh cuối chạy 50 step trên dữ liệu ngẫu nhiên để kiểm tra toàn bộ pipeline
 (model, optimizer, checkpoint, log). Nó không tạo ra model có ích.
 
+> Dung lượng local: `.venv` với torch CPU khoảng **1.1 GB**. Nếu chỉ làm việc
+> trên Colab, bạn không cần cài local; clone repo chỉ vài trăm KB.
+
 ## Colab Pro
 
 Mở [`notebooks/colab_pretrain.ipynb`](notebooks/colab_pretrain.ipynb), chọn GPU
