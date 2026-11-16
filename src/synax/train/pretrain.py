@@ -188,6 +188,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume", default=None, help="checkpoint path or 'auto'")
     parser.add_argument("--steps", type=int, default=None, help="override max_steps")
+    parser.add_argument("--warmup-steps", type=int, default=None, help="override warmup_steps")
+    parser.add_argument("--lr", type=float, default=None, help="override learning rate")
     parser.add_argument("--synthetic", action="store_true", help="random tokens, for smoke tests")
     parser.add_argument("--device", default=None)
     parser.add_argument("--train-bin", default=None, help="override data.train_bin")
@@ -199,6 +201,10 @@ def main(argv: list[str] | None = None) -> None:
     cfg = load_config(args.config)
     if args.steps is not None:
         cfg.train.max_steps = args.steps
+    if args.warmup_steps is not None:
+        cfg.train.warmup_steps = args.warmup_steps
+    if args.lr is not None:
+        cfg.train.lr = args.lr
     if args.synthetic:
         cfg.data.synthetic = True
     elif args.train_bin is not None:
