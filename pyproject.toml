@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 torch = ["torch>=2.5"]
 data = ["datasketch>=1.6"]
-dev = ["pytest>=8.0", "ruff>=0.6", "torch>=2.5"]
+dev = ["pytest>=8.0", "ruff==0.17.5", "torch>=2.5"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

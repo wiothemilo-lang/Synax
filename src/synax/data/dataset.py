@@ -52,9 +52,7 @@ class TokenDataset:
         )
         return torch.from_numpy(x), torch.from_numpy(y)
 
-    def sequential_batches(
-        self, batch_size: int
-    ) -> "SequentialBatchIterator":
+    def sequential_batches(self, batch_size: int) -> SequentialBatchIterator:
         return SequentialBatchIterator(self, batch_size)
 
     def token_count(self) -> int:
