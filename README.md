@@ -53,6 +53,8 @@ Lệnh cuối chạy 50 step trên dữ liệu ngẫu nhiên để kiểm tra to
 Chọn GPU (L4/A100 nếu có), mount Google Drive và chạy lần lượt các cell.
 Notebook code Python chạy thử 200MB trước, sau đó mới chạy full 4GB.
 
+Hướng dẫn từng bước + xử lý lỗi: [`docs/03-colab.md`](docs/03-colab.md).
+
 ## Domain code Python
 
 ```bash
